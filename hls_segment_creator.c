@@ -1,9 +1,6 @@
 #include <stdio.h>
 #include <memory.h>
 #include <stdlib.h>
-#ifndef WIN32
-	#include <unistd.h>
-#endif
 typedef struct resolution{
 	int width;
 	int height;
@@ -48,8 +45,11 @@ int main(int argc, char* argv[])
 	char tmp[1024] = { 0 }, realfilename[255] = { 0 },pfilename[255] = { 0 };
 	int realfileindex, pfileindex,i;
 	FILE* istream; 
-	
-	strformat = "ffmpeg -y -i %s -pix_fmt yuv420p -vcodec libx264 -acodec aac -strict -2 -r 25 -profile:v baseline  -b:v %dk -maxrate %dk -force_key_frames 50 -s %dx%d -map 0 -flags -global_header -f segment -segment_list %s_%d_%d.m3u8 -segment_time 10 -segment_format mpeg_ts -segment_list_type m3u8 %s_%d_%d_%%05d.ts";
+#ifdef WIN32
+	strformat = "start ffmpeg -y -i %s -pix_fmt yuv420p -vcodec libx264 -acodec aac -strict -2 -r 25 -profile:v baseline  -b:v %dk -maxrate %dk -force_key_frames 50 -s %dx%d -map 0 -flags -global_header -f segment -segment_list %s_%d_%d.m3u8 -segment_time 10 -segment_format mpeg_ts -segment_list_type m3u8 %s_%d_%d_%%05d.ts";
+#else
+	strformat = "ffmpeg -y -i %s -pix_fmt yuv420p -vcodec libx264 -acodec aac -strict -2 -r 25 -profile:v baseline  -b:v %dk -maxrate %dk -force_key_frames 50 -s %dx%d -map 0 -flags -global_header -f segment -segment_list %s_%d_%d.m3u8 -segment_time 10 -segment_format mpeg_ts -segment_list_type m3u8 %s_%d_%d_%%05d.ts &";
+#endif
 	if (argc > 1){
 		filename = argv[1];
 		realfileindex = GetFileNameWithoutExtension(filename);
@@ -64,21 +64,15 @@ int main(int argc, char* argv[])
 		istream = fopen(tmp, "w");
 		fprintf(istream, "#EXTM3U\n");
 		for (i = 0; i < sizeof(rlist) / sizeof(Tresolution); i++){
-#ifndef WIN32
-			pid_t fpid = fork();
-			if(fpid != 0){
-#endif
-				sprintf(tmp, strformat, 
-					pfilename,rlist[i].rate, rlist[i].maxrate,
-					rlist[i].width, rlist[i].height,
-					realfilename, rlist[i].width, rlist[i].height,
-					realfilename, rlist[i].width, rlist[i].height);
-				system(tmp);
-#ifndef WIN32
-			}
-#endif
+			sprintf(tmp, strformat, 
+				pfilename,rlist[i].rate, rlist[i].maxrate,
+				rlist[i].width, rlist[i].height,
+				realfilename, rlist[i].width, rlist[i].height,
+				realfilename, rlist[i].width, rlist[i].height);
 			fprintf(istream, "#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=%d000\n", rlist[i].maxrate);
 			fprintf(istream,"%s_%d_%d.m3u8\n", realfilename, rlist[i].width, rlist[i].height);
+				//execl(tmp,"ffmpeg",NULL);
+			system(tmp);
 		}
 		fprintf(istream, "#EXT-X-ENDLIST");
 		fclose(istream);
