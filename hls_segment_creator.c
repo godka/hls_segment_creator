@@ -48,7 +48,7 @@ int GetFileDetail(const char* filename, int *width, int *height, int *bitrate){
 		char* p = strtok(tmp, ",");
 		while (p != NULL){
 			if (!lockatt)
-				t = sscanf(p, " %dx%d [%s] , %d kb/s", &tmpwidth, &tmpheight, buffer);
+				t = sscanf(p, " %dx%d [%s]", &tmpwidth, &tmpheight, buffer);
 			if (t == 3){
 				lockatt = 1;
 				t = 0;
