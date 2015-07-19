@@ -4,8 +4,8 @@
 typedef struct resolution{
 	int width;
 	int height;
-	unsigned int rate;
-	unsigned int maxrate;
+	unsigned long rate;
+	unsigned long maxrate;
 } Tresolution;
 
 Tresolution rlist [] = {
@@ -36,7 +36,7 @@ int GetSystemOutput(char* cmdstring)
 }
 
 int GetFileDetail(const char* filename, int *width, int *height, int *bitrate){
-	int tmpwidth = 0, tmpheight = 0, tmpbitrate = 0,t,lockatt = 0;
+	int tmpwidth = 0, tmpheight = 0, tmpbitrate = 0,t,lockatt = 0,lockbit = 0;
 	char* p;
 	char tmp[1024] = { 0 };
 	char buffer[1024] = { 0 };
@@ -44,17 +44,18 @@ int GetFileDetail(const char* filename, int *width, int *height, int *bitrate){
 	FILE* ofile = fopen(tmp, "r");
 	while (!feof(ofile)){
 		fgets(tmp, 1024, ofile);
-		tmpwidth = 0, tmpheight = 0, tmpbitrate = 0;
+		//tmpwidth = 0, tmpheight = 0, tmpbitrate = 0;
 		char* p = strtok(tmp, ",");
 		while (p != NULL){
-			if (!lockatt)
-				t = sscanf(p, " %dx%d [%s]", &tmpwidth, &tmpheight, buffer);
-			if (t == 3){
-				lockatt = 1;
-				t = 0;
+			if (!lockbit){
+				t = sscanf(p, " bitrate: %d kb/s", &tmpbitrate);
+				if (t == 1)
+					lockbit = 1;
 			}
-			else{
-				sscanf(p, "%d  kb/s", &tmpbitrate);
+			if (!lockatt){
+				t = sscanf(p, " %dx%d [%s]", &tmpwidth, &tmpheight, buffer);
+				if (t == 3)
+				lockatt = 1;
 			}
 			if (tmpwidth > 0 && tmpheight > 0 && tmpbitrate > 0){
 				*width = tmpwidth;
@@ -118,8 +119,8 @@ int main(int argc, char* argv[])
 				if (rlist[i].width % 2 == 1){
 					rlist[i].width++;
 				}
-				rlist[i].rate = (unsigned int) oribitrate * (unsigned int) rlist[i].width * (unsigned int) rlist[i].height / ((unsigned int) oriwidth * (unsigned int) oriheight);
-				rlist[i].maxrate = (unsigned int) rlist[i].rate *(unsigned int) 15 / (unsigned int) 10;
+				rlist[i].rate = (unsigned long) oribitrate * (unsigned long) rlist[i].width / (unsigned long) oriwidth * (unsigned long) rlist[i].height / (unsigned long) oriheight;
+				rlist[i].maxrate = (unsigned long) rlist[i].rate *(unsigned long) 15 / (unsigned long) 10;
 				sprintf(tmp, strformat,
 					pfilename, rlist[i].rate, rlist[i].maxrate,
 					rlist[i].width, rlist[i].height,
